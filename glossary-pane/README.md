@@ -16,7 +16,7 @@ New words go at the top under **Last answer**. Older words stay below under **Ea
 At the prompt of a Claude Code terminal session:
 
 ```
-/plugin install glossary-pane --marketplace anhnd-ns/glossary-pane
+/plugin install glossary-pane --marketplace anhnds/claude-plugins
 ```
 
 Answer `y` to add the marketplace, then pick the **user** scope so it works in every project.
@@ -24,10 +24,10 @@ Answer `y` to add the marketplace, then pick the **user** scope so it works in e
 From a shell:
 
 ```
-claude plugin install glossary-pane --marketplace anhnd-ns/glossary-pane
+claude plugin install glossary-pane --marketplace anhnds/claude-plugins
 ```
 
-In the desktop app: click **+** next to the prompt box, then **Plugins**, **Add marketplace** with `anhnd-ns/glossary-pane`, then **Add plugin**.
+In the desktop app: click **+** next to the prompt box, then **Plugins**, **Add marketplace** with `anhnds/claude-plugins`, then **Add plugin**.
 
 ## Use
 

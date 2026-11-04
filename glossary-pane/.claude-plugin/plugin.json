@@ -1,7 +1,7 @@
 {
   "name": "glossary-pane",
   "version": "0.7.1",
-  "author": { "name": "anhnd-ns" },
+  "author": { "name": "anhnds" },
   "license": "MIT",
   "description": "A side pane that lists hard English words from Claude's last answer, with simple meanings and a translation",
   "types": "./types/index.d.ts",

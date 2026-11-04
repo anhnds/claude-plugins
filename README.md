@@ -1,6 +1,6 @@
-# anhnd-ns-plugins
+# anhnds-plugins
 
-A small marketplace of Claude Code plugins by [anhnd-ns](https://github.com/anhnd-ns).
+A small marketplace of Claude Code plugins by [anhnds](https://github.com/anhnds).
 
 | Plugin | Version | What it does |
 | --- | --- | --- |
@@ -8,15 +8,15 @@ A small marketplace of Claude Code plugins by [anhnd-ns](https://github.com/anhn
 
 ## Installation
 
-You need [Claude Code](https://claude.com/claude-code) installed. The marketplace is this GitHub repo, `anhnd-ns/claude-plugins`, and its name is `anhnd-ns-plugins`.
+You need [Claude Code](https://claude.com/claude-code) installed. The marketplace is this GitHub repo, `anhnds/claude-plugins`, and its name is `anhnds-plugins`.
 
 ### Option 1: inside a Claude Code session
 
 Add the marketplace, then install the plugin:
 
 ```
-/plugin marketplace add anhnd-ns/claude-plugins
-/plugin install glossary-pane@anhnd-ns-plugins
+/plugin marketplace add anhnds/claude-plugins
+/plugin install glossary-pane@anhnds-plugins
 ```
 
 When asked, pick the **user** scope so the plugin works in every project.
@@ -28,14 +28,14 @@ You can also run `/plugin` alone and browse the marketplace in the menu.
 One command adds the marketplace (if needed) and installs the plugin:
 
 ```sh
-claude plugin install glossary-pane --marketplace anhnd-ns/claude-plugins
+claude plugin install glossary-pane --marketplace anhnds/claude-plugins
 ```
 
 Or in two steps:
 
 ```sh
-claude plugin marketplace add anhnd-ns/claude-plugins
-claude plugin install glossary-pane@anhnd-ns-plugins
+claude plugin marketplace add anhnds/claude-plugins
+claude plugin install glossary-pane@anhnds-plugins
 ```
 
 The default scope is `user`. Use `--scope project` to share it with your team through the project's `.claude/settings.json`, or `--scope local` for this project only.
@@ -43,12 +43,12 @@ The default scope is `user`. Use `--scope project` to share it with your team th
 You can set plugin options at install time:
 
 ```sh
-claude plugin install glossary-pane@anhnd-ns-plugins --config language=Japanese
+claude plugin install glossary-pane@anhnds-plugins --config language=Japanese
 ```
 
 ### Option 3: in the desktop app
 
-Click **+** next to the prompt box, then **Plugins** → **Add marketplace**, enter `anhnd-ns/claude-plugins`, then **Add plugin** and choose **glossary-pane**.
+Click **+** next to the prompt box, then **Plugins** → **Add marketplace**, enter `anhnds/claude-plugins`, then **Add plugin** and choose **glossary-pane**.
 
 ### Check that it works
 
@@ -57,7 +57,7 @@ Start a new session (or restart the current one), then type `/glossary`. A small
 ### Update
 
 ```sh
-claude plugin marketplace update anhnd-ns-plugins
+claude plugin marketplace update anhnds-plugins
 ```
 
 Then restart Claude Code to load the new version.
@@ -65,9 +65,9 @@ Then restart Claude Code to load the new version.
 ### Disable or uninstall
 
 ```sh
-claude plugin disable glossary-pane@anhnd-ns-plugins     # turn it off, keep it installed
-claude plugin uninstall glossary-pane@anhnd-ns-plugins   # remove it
-claude plugin marketplace remove anhnd-ns-plugins        # remove the marketplace too
+claude plugin disable glossary-pane@anhnds-plugins     # turn it off, keep it installed
+claude plugin uninstall glossary-pane@anhnds-plugins   # remove it
+claude plugin marketplace remove anhnds-plugins        # remove the marketplace too
 ```
 
 All of these also work as `/plugin ...` inside a session.
@@ -86,7 +86,7 @@ See [glossary-pane/README.md](./glossary-pane/README.md) for commands, keys and 
 Clone the repo and load a plugin straight from the folder, without installing:
 
 ```sh
-git clone https://github.com/anhnd-ns/claude-plugins.git
+git clone https://github.com/anhnds/claude-plugins.git
 cd claude-plugins
 claude --plugin-dir ./glossary-pane
 ```
@@ -95,7 +95,7 @@ Or add your local clone as a marketplace:
 
 ```sh
 claude plugin marketplace add ./
-claude plugin install glossary-pane@anhnd-ns-plugins
+claude plugin install glossary-pane@anhnds-plugins
 ```
 
 Repo layout:
