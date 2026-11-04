@@ -1,0 +1,22 @@
+{
+  "name": "glossary-pane",
+  "version": "0.6.0",
+  "author": { "name": "anhnd-ns" },
+  "license": "MIT",
+  "description": "A side pane that lists hard English words from Claude's last answer, with simple meanings and a translation",
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "language": {
+      "type": "string",
+      "title": "Translation language",
+      "description": "Language for the short translation of each word",
+      "default": "Vietnamese"
+    },
+    "model": {
+      "type": "string",
+      "title": "Model",
+      "description": "Model that picks and explains the words",
+      "default": "haiku"
+    }
+  }
+}

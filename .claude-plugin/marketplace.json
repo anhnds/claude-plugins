@@ -1,0 +1,5 @@
+{
+  "name": "claude-plugins",
+  "owner": { "name": "anhnd-ns" },
+  "plugins": [{ "name": "glossary-pane", "source": "./glossary-pane" }]
+}
