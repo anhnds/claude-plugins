@@ -1,6 +1,6 @@
 {
   "name": "glossary-pane",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "author": { "name": "anhnd-ns" },
   "license": "MIT",
   "description": "A side pane that lists hard English words from Claude's last answer, with simple meanings and a translation",

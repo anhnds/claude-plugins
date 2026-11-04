@@ -239,6 +239,7 @@ test('/glossary opens a settings panel like /usage, with nothing in the chat', a
   const ui = await $.ui.mount({ ...PANE, requestId: 'glossary-settings', props: { ...PANE.props, title: 'Glossary settings' }, surface: 'terminal' })
   expect(await ui.find({ type: 'Text', text: /Change them in \/config/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /\/glossary toggle/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /glossary-pane 0\.7\.1/ })).toBeDefined()
   await ui.press({ key: 'mini' })
   await ui.unmount()
 

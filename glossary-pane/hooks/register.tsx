@@ -3,6 +3,8 @@ import type { EngineInterface, Register, RenderElement } from 'claude-code'
 
 import type { GlossaryEntry, GlossarySize, GlossaryStatus, GlossaryView } from '../types'
 
+// Shown in the /glossary panel. Keep in step with plugin.json's version.
+const VERSION = '0.7.1'
 const PANE = 'glossary'
 const TITLE = 'Glossary'
 // A small dialog, like /usage: opens on /glossary, Esc closes it, nothing goes in the chat.
@@ -339,6 +341,10 @@ export const register: Register = (on, options) => {
           <Text bold>Options</Text>
           <Text dimColor>  Translation: {language} · Model: {model}</Text>
           <Text dimColor>  Change them in /config. Turn the glossary off with /plugin.</Text>
+        </Box>
+
+        <Box marginTop={1}>
+          <Text dimColor>glossary-pane {VERSION}</Text>
         </Box>
 
         <Box flexDirection="column" marginTop={1}>
