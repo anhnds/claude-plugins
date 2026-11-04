@@ -1,7 +1,7 @@
 import { atom, read, update } from 'claude-code'
 import type { EngineInterface, Register, RenderElement } from 'claude-code'
 
-import type { GlossaryEntry, GlossaryMode, GlossaryStatus, GlossaryView } from '../types'
+import type { GlossaryEntry, GlossarySize, GlossaryStatus, GlossaryView } from '../types'
 
 const PANE = 'glossary'
 const TITLE = 'Glossary'
@@ -10,8 +10,12 @@ const SETTINGS = 'glossary-settings'
 const SETTINGS_TITLE = 'Glossary settings'
 const STORE_KEY = 'entries-1'
 const KNOWN_KEY = 'known-1'
-const MODE_KEY = 'mode-1'
-// Keys from 0.3.0/0.4.0, read once to pick the first mode.
+// The pane's size (full or mini), and whether it is shown at all.
+const SIZE_KEY = 'size-2'
+const VISIBLE_KEY = 'visible-1'
+// Keys from older versions, read once to pick the first size.
+// 0.5.0/0.6.0 kept the size as mode 'show' (full) or 'hide' (mini).
+const OLD_MODE_KEY = 'mode-1'
 const OLD_SIZE_KEY = 'size-1'
 const OLD_HIDDEN_KEY = 'hidden-1'
 const MAX_ENTRIES = 500
@@ -33,7 +37,8 @@ const status = atom({ plugin: 'glossary-pane', key: 'status' } as const, {
 } as GlossaryStatus)
 const batch = atom({ plugin: 'glossary-pane', key: 'batch' } as const, 0)
 const view = atom({ plugin: 'glossary-pane', key: 'view' } as const, 'main' as GlossaryView)
-const mode = atom({ plugin: 'glossary-pane', key: 'mode' } as const, 'show' as GlossaryMode)
+const size = atom({ plugin: 'glossary-pane', key: 'size' } as const, 'full' as GlossarySize)
+const visible = atom({ plugin: 'glossary-pane', key: 'visible' } as const, true)
 // The pane draws its buttons in a header that stays put, and scrolls the rows
 // under it itself: this is the first of those rows on screen.
 const scroll = atom({ plugin: 'glossary-pane', key: 'scroll' } as const, 0)
@@ -150,9 +155,11 @@ async function explain(
 
 const HELP: readonly (readonly [string, string])[] = [
   ['/glossary', 'Open the settings panel (Esc closes it)'],
-  ['/glossary show', 'Show mode: the full pane with every word'],
-  ['/glossary hide', 'Hide mode: a small pane, one line per word of the last answer'],
-  ['/glossary toggle', 'Switch to the other mode'],
+  ['/glossary show', 'Show the pane'],
+  ['/glossary hide', 'Hide the pane (words are still collected)'],
+  ['/glossary toggle', 'Show or hide the pane'],
+  ['/glossary full', 'Full size: every word, with meanings and examples'],
+  ['/glossary mini', 'Mini size: one line per word of the last answer'],
   ['/glossary manage', 'Open the menu: history log, mark words I know, help'],
   ['/glossary clear', 'Delete the word history (known words are kept)'],
   ['/glossary help', 'Open the settings panel, with this list'],
@@ -169,7 +176,8 @@ async function toLatest($: EngineInterface): Promise<void> {
 
 // Open the pane and show the latest words.
 async function openPane($: EngineInterface): Promise<void> {
-  const r = await $.ui.open({ id: PANE, title: TITLE })
+  // 'transparent': no fill behind the pane, so it keeps the terminal's own colors.
+  const r = await $.ui.open({ id: PANE, title: TITLE, backgroundColor: 'transparent' })
   if (r.isPlaced) await toLatest($)
 }
 
@@ -181,17 +189,25 @@ async function clearWords($: EngineInterface): Promise<void> {
   await $.store.set(STORE_KEY, [])
 }
 
-// Set the mode, keep it for new sessions, and make sure the pane is open.
 async function setView($: EngineInterface, to: GlossaryView): Promise<void> {
   await update($, view, () => to)
   await update($, scroll, () => 0)
 }
 
-async function setMode($: EngineInterface, to: GlossaryMode): Promise<void> {
-  await update($, mode, () => to)
+// Show or hide the pane, and keep the choice for new sessions.
+async function setVisible($: EngineInterface, to: boolean): Promise<void> {
+  await update($, visible, () => to)
+  await $.store.set(VISIBLE_KEY, to)
+  if (to) await openPane($)
+  else await $.ui.close({ id: PANE })
+}
+
+// Set the size, keep it for new sessions, and show the pane so the change is seen.
+async function setSize($: EngineInterface, to: GlossarySize): Promise<void> {
+  await update($, size, () => to)
   await update($, scroll, () => 0)
-  await $.store.set(MODE_KEY, to)
-  await openPane($)
+  await $.store.set(SIZE_KEY, to)
+  await setVisible($, true)
 }
 
 async function toggleKnown($: EngineInterface, word: string): Promise<void> {
@@ -210,7 +226,9 @@ export const register: Register = (on, options) => {
     await $.command.register({
       name: 'glossary',
       description: 'Open the glossary settings panel',
-      argumentHint: '[show|hide|toggle|manage|clear|help]',
+      argumentHint: '[show|hide|toggle|full|mini|manage|clear|help]',
+      // Runs at once, like /config, even while Claude is still answering.
+      immediate: true,
     })
     const saved = await $.store.get(STORE_KEY)
     if (Array.isArray(saved)) {
@@ -222,16 +240,21 @@ export const register: Register = (on, options) => {
     if (Array.isArray(savedKnown)) {
       await update($, known, () => savedKnown.filter((k): k is string => typeof k === 'string'))
     }
-    let savedMode = await $.store.get(MODE_KEY)
-    if (savedMode !== 'show' && savedMode !== 'hide') {
+    let savedSize = await $.store.get(SIZE_KEY)
+    if (savedSize !== 'full' && savedSize !== 'mini') {
+      const oldMode = await $.store.get(OLD_MODE_KEY)
       const wasSmall =
-        (await $.store.get(OLD_SIZE_KEY)) === 'mini' || (await $.store.get(OLD_HIDDEN_KEY)) === true
-      savedMode = wasSmall ? 'hide' : 'show'
+        oldMode === 'hide' ||
+        (oldMode !== 'show' &&
+          ((await $.store.get(OLD_SIZE_KEY)) === 'mini' || (await $.store.get(OLD_HIDDEN_KEY)) === true))
+      savedSize = wasSmall ? 'mini' : 'full'
     }
-    const startMode = savedMode as GlossaryMode
-    await update($, mode, () => startMode)
+    const startSize = savedSize as GlossarySize
+    await update($, size, () => startSize)
+    const isVisible = (await $.store.get(VISIBLE_KEY)) !== false
+    await update($, visible, () => isVisible)
     await setView($, 'main')
-    void openPane($)
+    if (isVisible) void openPane($)
     return next(e)
   })
 
@@ -244,13 +267,16 @@ export const register: Register = (on, options) => {
       $.ui.toast('Glossary cleared. (Words you marked as known are kept.)')
     } else if (arg === 'manage') {
       await setView($, 'menu')
-      await $.ui.open({ id: PANE, title: TITLE })
+      await setVisible($, true)
     } else if (arg === 'show' || arg === 'hide' || arg === 'toggle') {
-      const to: GlossaryMode =
-        arg !== 'toggle' ? arg : (await read($, mode)) === 'show' ? 'hide' : 'show'
+      const to = arg === 'toggle' ? !(await read($, visible)) : arg === 'show'
+      if (to) await setView($, 'main')
+      await setVisible($, to)
+      $.ui.toast(to ? 'Glossary shown.' : 'Glossary hidden. /glossary show brings it back.')
+    } else if (arg === 'full' || arg === 'mini') {
       await setView($, 'main')
-      await setMode($, to)
-      $.ui.toast(to === 'show' ? 'Glossary: show mode.' : 'Glossary: hide mode (small pane).')
+      await setSize($, arg)
+      $.ui.toast(arg === 'full' ? 'Glossary: full size.' : 'Glossary: mini size.')
     } else {
       await openSettings($)
     }
@@ -260,22 +286,36 @@ export const register: Register = (on, options) => {
   // ── Settings panel ──
   on('ui.render', { component: 'Pane', requestId: SETTINGS }, async ($, e) => {
     const { Box, Text, Button } = $.ui.resolve(e)
-    const current = await read($, mode)
+    const current = await read($, size)
+    const shown = await read($, visible)
     const all = await read($, entries)
     const knownList = await read($, known)
     const close = () => $.ui.close({ id: SETTINGS })
-    const pick = (to: GlossaryMode) => async () => {
+    const pickSize = (to: GlossarySize) => async () => {
       await setView($, 'main')
-      await setMode($, to)
+      await setSize($, to)
+    }
+    const pickShown = (to: boolean) => async () => {
+      if (to) await setView($, 'main')
+      await setVisible($, to)
     }
     return (
       <Box flexDirection="column">
-        <Text bold>Mode</Text>
+        <Text bold>Pane</Text>
         <Box>
-          <Button key="show" label={current === 'show' ? '● Show' : '○ Show'} hotkey="s" autoFocus onPress={pick('show')} />
-          <Button key="hide" label={current === 'hide' ? '● Hide' : '○ Hide'} hotkey="h" onPress={pick('hide')} />
+          <Button key="show" label={shown ? '● Show' : '○ Show'} hotkey="s" autoFocus onPress={pickShown(true)} />
+          <Button key="hide" label={shown ? '○ Hide' : '● Hide'} hotkey="h" onPress={pickShown(false)} />
         </Box>
-        <Text dimColor>  Show: full pane. Hide: small pane, last answer only.</Text>
+        <Text dimColor>  Hidden, words are still collected for later.</Text>
+
+        <Box flexDirection="column" marginTop={1}>
+          <Text bold>Size</Text>
+          <Box>
+            <Button key="full" label={current === 'full' ? '● Full' : '○ Full'} hotkey="f" onPress={pickSize('full')} />
+            <Button key="mini" label={current === 'mini' ? '● Mini' : '○ Mini'} hotkey="n" onPress={pickSize('mini')} />
+          </Box>
+          <Text dimColor>  Full: meanings and examples. Mini: one line per word, last answer only.</Text>
+        </Box>
 
         <Box flexDirection="column" marginTop={1}>
           <Text bold>Words</Text>
@@ -287,7 +327,7 @@ export const register: Register = (on, options) => {
               hotkey="m"
               onPress={async () => {
                 await setView($, 'menu')
-                await $.ui.open({ id: PANE, title: TITLE })
+                await setVisible($, true)
                 await close()
               }}
             />
@@ -338,7 +378,7 @@ export const register: Register = (on, options) => {
     const knownList = await read($, known)
     const st = await read($, status)
     const screen = await read($, view)
-    const small = (await read($, mode)) === 'hide'
+    const small = (await read($, size)) === 'mini'
     const isKnown = new Set(knownList)
     const go = (v: GlossaryView) => () => setView($, v)
 
@@ -405,9 +445,10 @@ export const register: Register = (on, options) => {
           <Box flexDirection="column" marginTop={1}>
             <Text bold>Keys in the pane</Text>
             <Text dimColor>  ctrl+x tab moves to the pane, then:</Text>
-            <Text>  h Show/Hide · m Manage · b Back</Text>
+            <Text>  z Full/Mini · m Manage · b Back</Text>
+            <Text dimColor>  ctrl+x x hides the pane; /glossary show brings it back.</Text>
             <Text dimColor>  Wheel or PgUp/PgDn scrolls the words; the buttons stay on top.</Text>
-            <Text dimColor>  In /glossary: s Show · h Hide · m Manage · c Clear</Text>
+            <Text dimColor>  In /glossary: s Show · h Hide · f Full · n Mini · m Manage · c Clear</Text>
             <Text>  1 History · 2 Mark · 3 Help (in Manage)</Text>
           </Box>
         </Box>
@@ -486,10 +527,10 @@ export const register: Register = (on, options) => {
     const buttons = (
       <Box>
         <Button
-          key="mode"
-          label={small ? 'Show' : 'Hide'}
-          hotkey="h"
-          onPress={() => setMode($, small ? 'show' : 'hide')}
+          key="size"
+          label={small ? 'Full' : 'Mini'}
+          hotkey="z"
+          onPress={() => setSize($, small ? 'full' : 'mini')}
         />
         {!small && <Button key="manage" label="Manage" hotkey="m" onPress={go('menu')} />}
         {!small && all.length > 0 && (
@@ -507,7 +548,7 @@ export const register: Register = (on, options) => {
       </Text>
     )
 
-    // ── Hide mode: one line per word of the last answer ──
+    // ── Mini size: one line per word of the last answer ──
     if (small) {
       const words = list.filter(x => x.batch === latest)
       const rows: RenderElement[] = words.map(x => (
@@ -550,6 +591,17 @@ export const register: Register = (on, options) => {
       rows.push(<Text bold underline>Earlier</Text>, ...older.flatMap(entryRows))
     }
     return sticky([buttons, statusLine], rows)
+  })
+
+  // Closing the pane by hand (its close mark, ctrl+x x) counts as hide, so it
+  // stays hidden in new sessions until /glossary show.
+  on('ui.close', { id: PANE }, async ($, e, next) => {
+    const result = await next(e)
+    if (e.origin.kind === 'person') {
+      await update($, visible, () => false)
+      await $.store.set(VISIBLE_KEY, false)
+    }
+    return result
   })
 
   // The rows under the header scroll here, not in the engine's window, so the

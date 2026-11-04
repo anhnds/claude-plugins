@@ -40,29 +40,31 @@ Type `/glossary` to open a small settings panel, like `/usage`. It does not writ
 
 In the panel:
 
-- **Mode**: **Show** (`s`) or **Hide** (`h`)
+- **Pane**: **Show** (`s`) or **Hide** (`h`)
+- **Size**: **Full** (`f`) or **Mini** (`n`)
 - **Words**: **Manage** (`m`) and **Clear history** (`c`)
 - **Options**: your translation language and model (change them in `/config`)
 - **Commands**: every `/glossary` command
 
-### Show and hide modes
+`/glossary` runs at once, even while Claude is still answering, like `/config`.
 
-The pane always has one of two modes:
+### Show/hide and size
 
-- **Show**: the full pane, with meanings and examples
-- **Hide**: a small pane, one line per word (word + IPA + translation) from the last answer
-
-Quick commands (they show a short notice, not a chat message):
+Two separate settings, both kept in new sessions:
 
 | Command | What it does |
 | --- | --- |
-| `/glossary show` | Show mode |
-| `/glossary hide` | Hide mode |
-| `/glossary toggle` | Switch to the other mode |
+| `/glossary show` | Show the pane |
+| `/glossary hide` | Hide the pane (words are still collected) |
+| `/glossary toggle` | Show or hide the pane |
+| `/glossary full` | Full size: meanings and examples |
+| `/glossary mini` | Mini size: one line per word (word + IPA + translation) from the last answer |
 | `/glossary manage` | Open the Manage menu in the pane |
 | `/glossary clear` | Delete the word history (known words are kept) |
 
-The pane's **Show/Hide** button (`h`) also switches modes. Your mode is kept in new sessions.
+These commands show a short notice, never a chat message. The pane's **Full/Mini** button (`z`) also switches the size. Closing the pane with its close mark or `ctrl+x x` hides it, until `/glossary show`.
+
+The pane has no background of its own, so it keeps your terminal's colors.
 
 To turn the glossary off completely (no pane, no word lookups), disable the plugin with `/plugin`.
 
@@ -70,7 +72,7 @@ To turn the glossary off completely (no pane, no word lookups), disable the plug
 
 ### Manage menu
 
-Press **Manage** at the bottom of the pane (or type `/glossary manage`). It has two functions:
+Press **Manage** at the top of the pane (or type `/glossary manage`). It has two functions:
 
 1. **History log**: every saved word, grouped by day. Words you know have a ✓.
 2. **Mark words I know**: press a word to mark it as known (`[x]`). Known words are hidden from the main view, and the mod tells the model to skip them in later answers. Press again to unmark.

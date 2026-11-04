@@ -15,8 +15,8 @@ export type GlossaryStatus = { kind: 'idle' | 'working' | 'error'; text: string 
 /** Which screen the pane shows. */
 export type GlossaryView = 'main' | 'menu' | 'history' | 'mark' | 'help'
 
-/** show: the full pane. hide: a small pane with only the last answer's words. */
-export type GlossaryMode = 'show' | 'hide'
+/** full: every word with meanings and examples. mini: one line per word of the last answer. */
+export type GlossarySize = 'full' | 'mini'
 
 declare module 'claude-code' {
   interface PluginState {
@@ -27,7 +27,9 @@ declare module 'claude-code' {
       status: GlossaryStatus
       batch: number
       view: GlossaryView
-      mode: GlossaryMode
+      size: GlossarySize
+      /** Whether the pane is shown. Hidden, words are still collected. */
+      visible: boolean
       /** The first row shown under the pinned header, in rows of the scrolled list. */
       scroll: number
     }

@@ -106,42 +106,109 @@ test('manage menu: mark a word as known, it leaves the main view and shows ✓ i
   }
 })
 
-test('show and hide are two modes, and /glossary toggle switches between them', async ($, on) => {
+test('show and hide open and close the pane, toggle switches them, and nothing goes in the chat', async ($, on) => {
   mock.store(on)
   const open = new Set<string>()
-  on('command.register', () => ({ value: { command: 'glossary' } }))
+  const registered: { immediate?: true }[] = []
+  on('command.register', (_, e) => {
+    registered.push(e)
+    return { value: { command: 'glossary' } }
+  })
   on('ui.open', (_, e) => {
     open.add(e.id)
     return { value: { isPlaced: true } }
   })
+  on('ui.close', (_, e) => {
+    open.delete(e.id)
+    return { value: undefined }
+  })
+  on('ui.toast', () => ({ value: undefined }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
 
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  // Runs at once, like /config, even mid-answer.
+  expect(registered[0]?.immediate).toBe(true)
   expect(open.has('glossary')).toBe(true)
+
+  expect((await $.command.run({ command: 'glossary', args: 'hide' })).text).toBeUndefined()
+  expect(open.has('glossary')).toBe(false)
+  expect((await $.command.run({ command: 'glossary', args: 'show' })).text).toBeUndefined()
+  expect(open.has('glossary')).toBe(true)
+
+  await $.command.run({ command: 'glossary', args: 'toggle' })
+  expect(open.has('glossary')).toBe(false)
+  await $.command.run({ command: 'glossary', args: 'toggle' })
+  expect(open.has('glossary')).toBe(true)
+})
+
+test('full and mini set the size, and the pane button switches it', async ($, on) => {
+  mock.store(on)
+  on('ui.close', () => ({ value: undefined }))
+  on('ui.toast', () => ({ value: undefined }))
+  on('command.register', () => ({ value: { command: 'glossary' } }))
+  on('ui.open', () => ({ value: { isPlaced: true } }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
 
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
-  // Starts in show mode: the full pane.
+  // Starts full size.
   expect(await ui.find({ type: 'Text', text: /Hard words from Claude/ })).toBeDefined()
-
-  // Hide mode keeps the pane open, but small.
-  // Nothing is written to the chat.
-  expect((await $.command.run({ command: 'glossary', args: 'hide' })).text).toBeUndefined()
-  expect(open.has('glossary')).toBe(true)
+  await $.command.run({ command: 'glossary', args: 'mini' })
   expect(await ui.find({ type: 'Text', text: /No new hard words/ })).toBeDefined()
-
+  await $.command.run({ command: 'glossary', args: 'full' })
+  expect(await ui.find({ type: 'Text', text: /Hard words from Claude/ })).toBeDefined()
+  // Toggle is about showing, not size.
+  await $.command.run({ command: 'glossary', args: 'toggle' })
   await $.command.run({ command: 'glossary', args: 'toggle' })
   expect(await ui.find({ type: 'Text', text: /Hard words from Claude/ })).toBeDefined()
-  await $.command.run({ command: 'glossary', args: 'toggle' })
-  expect(await ui.find({ type: 'Text', text: /No new hard words/ })).toBeDefined()
 
-  // The button does the same.
-  await ui.press({ key: 'mode' })
-  expect(await ui.find({ type: 'Text', text: /Hard words from Claude/ })).toBeDefined()
-  expect(open.has('glossary')).toBe(true)
+  await ui.press({ key: 'size' })
+  expect(await ui.find({ type: 'Text', text: /No new hard words/ })).toBeDefined()
   await ui.unmount()
 })
 
-test('a person who hid the pane in 0.4.0 starts in hide mode', async ($, on) => {
+test('a hidden pane stays hidden in the next session, and opens with a clear background', async ($, on) => {
+  mock.store(on)
+  const opened: { id: string; backgroundColor?: unknown }[] = []
+  on('command.register', () => ({ value: { command: 'glossary' } }))
+  on('ui.open', (_, e) => {
+    opened.push(e)
+    return { value: { isPlaced: true } }
+  })
+  on('ui.close', () => ({ value: undefined }))
+  on('ui.toast', () => ({ value: undefined }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  expect(opened.length).toBe(1)
+  // Keeps the terminal's colors.
+  expect(opened[0]?.backgroundColor).toBe('transparent')
+
+  await $.command.run({ command: 'glossary', args: 'hide' })
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  expect(opened.length).toBe(1)
+
+  await $.command.run({ command: 'glossary', args: 'show' })
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  expect(opened.length).toBe(3)
+})
+
+test('a person in hide mode in 0.6.0 starts with the mini size, pane shown', async ($, on) => {
+  mock.store(on, { 'mode-1': 'hide' })
+  const opened: string[] = []
+  on('command.register', () => ({ value: { command: 'glossary' } }))
+  on('ui.open', (_, e) => {
+    opened.push(e.id)
+    return { value: { isPlaced: true } }
+  })
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  expect(opened).toEqual(['glossary'])
+  const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: /No new hard words/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('a person who hid the pane in 0.4.0 starts with the mini size', async ($, on) => {
   mock.store(on, { 'hidden-1': true })
   on('command.register', () => ({ value: { command: 'glossary' } }))
   on('ui.open', () => ({ value: { isPlaced: true } }))
@@ -172,10 +239,10 @@ test('/glossary opens a settings panel like /usage, with nothing in the chat', a
   const ui = await $.ui.mount({ ...PANE, requestId: 'glossary-settings', props: { ...PANE.props, title: 'Glossary settings' }, surface: 'terminal' })
   expect(await ui.find({ type: 'Text', text: /Change them in \/config/ })).toBeDefined()
   expect(await ui.find({ type: 'Text', text: /\/glossary toggle/ })).toBeDefined()
-  await ui.press({ key: 'hide' })
+  await ui.press({ key: 'mini' })
   await ui.unmount()
 
-  // The main pane is now in hide mode.
+  // The main pane is now mini.
   const pane = await $.ui.mount({ ...PANE, surface: 'terminal' })
   expect(await pane.find({ type: 'Text', text: /No new hard words/ })).toBeDefined()
   await pane.unmount()
@@ -191,7 +258,7 @@ test('the Manage menu has a Help screen', async ($, on) => {
   const ui = await $.ui.mount({ ...PANE, surface: 'terminal' })
   await ui.press({ key: 'manage' })
   await ui.press({ key: 'help' })
-  expect(await ui.find({ type: 'Text', text: /Hide mode: a small pane/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /Mini size: one line per word/ })).toBeDefined()
   await ui.unmount()
 })
 
