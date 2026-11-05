@@ -1,0 +1,8 @@
+{
+  "name": "board-pane",
+  "version": "0.1.0",
+  "author": { "name": "anhnds" },
+  "license": "MIT",
+  "description": "A side pane that lists the local tickets in .scratch/*/issues, grouped by epic, as plain ASCII text",
+  "types": "./types/index.d.ts"
+}

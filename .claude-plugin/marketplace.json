@@ -1,5 +1,16 @@
 {
   "name": "anhnds-plugins",
-  "owner": { "name": "anhnds" },
-  "plugins": [{ "name": "glossary-pane", "source": "./glossary-pane" }]
+  "owner": {
+    "name": "anhnds"
+  },
+  "plugins": [
+    {
+      "name": "glossary-pane",
+      "source": "./glossary-pane"
+    },
+    {
+      "name": "board-pane",
+      "source": "./board-pane"
+    }
+  ]
 }

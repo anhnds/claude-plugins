@@ -5,6 +5,7 @@ A small marketplace of Claude Code plugins by [anhnds](https://github.com/anhnds
 | Plugin | Version | What it does |
 | --- | --- | --- |
 | [glossary-pane](./glossary-pane) | 0.7.1 | A side pane that lists hard English words from Claude's last answer, with IPA, a simple meaning, a translation and an example |
+| [board-pane](./board-pane) | 0.1.0 | A side pane that lists local tickets from `.scratch/*/issues`, grouped by epic, as plain ASCII text |
 
 ## Installation
 
